@@ -2,10 +2,24 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sajal/go-ecommerce/internal/models"
+	"github.com/sajal/go-ecommerce/internal/service"
 )
+
+type ProductHandler struct {
+	*Handler
+	service *service.ProductService
+}
+
+func NewProductHandler(handler *Handler, service *service.ProductService) *ProductHandler {
+	return &ProductHandler{
+		Handler: handler,
+		service: service,
+	}
+}
 
 // ListProducts godoc
 // @Summary List all products
@@ -19,26 +33,31 @@ import (
 // @Param search query string false "Search term"
 // @Success 200 {object} Response
 // @Router /products [get]
-func (h *Handler) ListProducts(c *gin.Context) {
-	var products []models.Product
-	query := h.db.Model(&models.Product{})
+func (h *ProductHandler) ListProducts(c *gin.Context) {
+	filters := make(map[string]interface{})
 
-	// Apply filters
 	if categoryID := c.Query("category_id"); categoryID != "" {
-		query = query.Where("category_id = ?", categoryID)
+		if id, err := strconv.ParseUint(categoryID, 10, 32); err == nil {
+			filters["category_id"] = uint(id)
+		}
 	}
 	if minPrice := c.Query("min_price"); minPrice != "" {
-		query = query.Where("price >= ?", minPrice)
+		if price, err := strconv.ParseFloat(minPrice, 64); err == nil {
+			filters["min_price"] = price
+		}
 	}
 	if maxPrice := c.Query("max_price"); maxPrice != "" {
-		query = query.Where("price <= ?", maxPrice)
+		if price, err := strconv.ParseFloat(maxPrice, 64); err == nil {
+			filters["max_price"] = price
+		}
 	}
 	if search := c.Query("search"); search != "" {
-		query = query.Where("name ILIKE ? OR description ILIKE ?", "%"+search+"%", "%"+search+"%")
+		filters["search"] = search
 	}
 
-	if err := query.Preload("Category").Preload("Images").Find(&products).Error; err != nil {
-		h.errorResponse(c, http.StatusInternalServerError, "Failed to fetch products")
+	products, err := h.service.ListProducts(filters)
+	if err != nil {
+		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -54,12 +73,16 @@ func (h *Handler) ListProducts(c *gin.Context) {
 // @Param id path int true "Product ID"
 // @Success 200 {object} Response
 // @Router /products/{id} [get]
-func (h *Handler) GetProduct(c *gin.Context) {
-	id := c.Param("id")
-	var product models.Product
+func (h *ProductHandler) GetProduct(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "Invalid product ID")
+		return
+	}
 
-	if err := h.db.Preload("Category").Preload("Images").First(&product, id).Error; err != nil {
-		h.errorResponse(c, http.StatusNotFound, "Product not found")
+	product, err := h.service.GetProduct(uint(id))
+	if err != nil {
+		h.errorResponse(c, http.StatusNotFound, err.Error())
 		return
 	}
 
@@ -75,15 +98,15 @@ func (h *Handler) GetProduct(c *gin.Context) {
 // @Param product body models.Product true "Product details"
 // @Success 201 {object} Response
 // @Router /products [post]
-func (h *Handler) CreateProduct(c *gin.Context) {
+func (h *ProductHandler) CreateProduct(c *gin.Context) {
 	var product models.Product
 	if err := c.ShouldBindJSON(&product); err != nil {
 		h.errorResponse(c, http.StatusBadRequest, "Invalid input")
 		return
 	}
 
-	if err := h.db.Create(&product).Error; err != nil {
-		h.errorResponse(c, http.StatusInternalServerError, "Failed to create product")
+	if err := h.service.CreateProduct(&product); err != nil {
+		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -100,22 +123,21 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 // @Param product body models.Product true "Updated product details"
 // @Success 200 {object} Response
 // @Router /products/{id} [put]
-func (h *Handler) UpdateProduct(c *gin.Context) {
-	id := c.Param("id")
-	var product models.Product
-
-	if err := h.db.First(&product, id).Error; err != nil {
-		h.errorResponse(c, http.StatusNotFound, "Product not found")
+func (h *ProductHandler) UpdateProduct(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
+	var product models.Product
 	if err := c.ShouldBindJSON(&product); err != nil {
 		h.errorResponse(c, http.StatusBadRequest, "Invalid input")
 		return
 	}
 
-	if err := h.db.Save(&product).Error; err != nil {
-		h.errorResponse(c, http.StatusInternalServerError, "Failed to update product")
+	if err := h.service.UpdateProduct(uint(id), &product); err != nil {
+		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -131,10 +153,15 @@ func (h *Handler) UpdateProduct(c *gin.Context) {
 // @Param id path int true "Product ID"
 // @Success 204 "No Content"
 // @Router /products/{id} [delete]
-func (h *Handler) DeleteProduct(c *gin.Context) {
-	id := c.Param("id")
-	if err := h.db.Delete(&models.Product{}, id).Error; err != nil {
-		h.errorResponse(c, http.StatusInternalServerError, "Failed to delete product")
+func (h *ProductHandler) DeleteProduct(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "Invalid product ID")
+		return
+	}
+
+	if err := h.service.DeleteProduct(uint(id)); err != nil {
+		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 

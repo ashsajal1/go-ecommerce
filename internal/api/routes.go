@@ -11,8 +11,8 @@ func (h *Handler) SetupRoutes(r *gin.Engine) {
 		// Product routes
 		products := public.Group("/products")
 		{
-			products.GET("", h.ListProducts)
-			products.GET("/:id", h.GetProduct)
+			products.GET("", h.productHandler.ListProducts)
+			products.GET("/:id", h.productHandler.GetProduct)
 		}
 
 		// Auth routes
@@ -58,9 +58,9 @@ func (h *Handler) SetupRoutes(r *gin.Engine) {
 		admin.Use(h.AdminMiddleware())
 		{
 			// Product management
-			admin.POST("/products", h.CreateProduct)
-			admin.PUT("/products/:id", h.UpdateProduct)
-			admin.DELETE("/products/:id", h.DeleteProduct)
+			admin.POST("/products", h.productHandler.CreateProduct)
+			admin.PUT("/products/:id", h.productHandler.UpdateProduct)
+			admin.DELETE("/products/:id", h.productHandler.DeleteProduct)
 
 			// Order management
 			admin.PUT("/orders/:id/status", h.UpdateOrderStatus)
