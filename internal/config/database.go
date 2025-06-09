@@ -33,6 +33,12 @@ func InitDB(config *Config) *gorm.DB {
 		&models.Product{},
 		&models.Category{},
 		&models.Image{},
+		&models.Order{},
+		&models.OrderItem{},
+		&models.Cart{},
+		&models.CartItem{},
+		&models.Address{},
+		&models.Review{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
