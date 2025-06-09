@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/sajal/go-ecommerce/docs"
+	_ "github.com/sajal/go-ecommerce/docs"
 	"github.com/sajal/go-ecommerce/internal/api"
 	"github.com/sajal/go-ecommerce/internal/config"
 	"github.com/sajal/go-ecommerce/internal/middleware"
@@ -25,7 +25,7 @@ import (
 // @license.name  Apache 2.0
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host      localhost:8080
+// @host      localhost:8000
 // @BasePath  /api/v1
 
 // @securityDefinitions.apikey BearerAuth
@@ -58,7 +58,6 @@ func main() {
 	handler.SetupRoutes(router)
 
 	// Swagger documentation
-	docs.SwaggerInfo.BasePath = "/api/v1"
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Start server
