@@ -31,57 +31,66 @@ func (s *ProductService) CreateProduct(product *models.Product) error {
 }
 
 func (s *ProductService) GetProduct(id uint) (*models.Product, error) {
-	product, err := s.repo.FindByID(id)
-	if err != nil {
-		return nil, errors.New("product not found")
-	}
-	return product, nil
+	return s.repo.FindByID(id)
 }
 
-func (s *ProductService) ListProducts(filters map[string]interface{}) ([]models.Product, error) {
-	// Validate filters
-	if minPrice, ok := filters["min_price"].(float64); ok && minPrice < 0 {
-		return nil, errors.New("minimum price cannot be negative")
-	}
-	if maxPrice, ok := filters["max_price"].(float64); ok && maxPrice < 0 {
-		return nil, errors.New("maximum price cannot be negative")
-	}
-
-	return s.repo.List(filters)
+func (s *ProductService) GetAllProducts() ([]models.Product, error) {
+	return s.repo.FindAll()
 }
 
-func (s *ProductService) UpdateProduct(id uint, updates *models.Product) error {
+func (s *ProductService) GetProductsByCategory(categoryID uint) ([]models.Product, error) {
+	return s.repo.FindByCategory(categoryID)
+}
+
+func (s *ProductService) UpdateProduct(product *models.Product) error {
 	// Check if product exists
-	existing, err := s.repo.FindByID(id)
+	existingProduct, err := s.repo.FindByID(product.ID)
 	if err != nil {
 		return errors.New("product not found")
 	}
 
-	// Apply updates
-	if updates.Name != "" {
-		existing.Name = updates.Name
+	// Validate product data
+	if product.Name == "" {
+		return errors.New("product name is required")
 	}
-	if updates.Description != "" {
-		existing.Description = updates.Description
+	if product.Price <= 0 {
+		return errors.New("product price must be greater than 0")
 	}
-	if updates.Price > 0 {
-		existing.Price = updates.Price
-	}
-	if updates.Stock >= 0 {
-		existing.Stock = updates.Stock
-	}
-	if updates.CategoryID > 0 {
-		existing.CategoryID = updates.CategoryID
+	if product.Stock < 0 {
+		return errors.New("product stock cannot be negative")
 	}
 
-	return s.repo.Update(existing)
+	// Preserve some fields
+	product.CreatedAt = existingProduct.CreatedAt
+
+	return s.repo.Update(product)
 }
 
 func (s *ProductService) DeleteProduct(id uint) error {
 	// Check if product exists
-	if _, err := s.repo.FindByID(id); err != nil {
+	_, err := s.repo.FindByID(id)
+	if err != nil {
 		return errors.New("product not found")
 	}
 
 	return s.repo.Delete(id)
+}
+
+func (s *ProductService) SearchProducts(query string) ([]models.Product, error) {
+	return s.repo.Search(query)
+}
+
+func (s *ProductService) UpdateStock(id uint, quantity int) error {
+	// Check if product exists
+	_, err := s.repo.FindByID(id)
+	if err != nil {
+		return errors.New("product not found")
+	}
+
+	// Validate quantity
+	if quantity < 0 {
+		return errors.New("stock quantity cannot be negative")
+	}
+
+	return s.repo.UpdateStock(id, quantity)
 }

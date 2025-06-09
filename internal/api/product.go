@@ -55,7 +55,7 @@ func (h *ProductHandler) ListProducts(c *gin.Context) {
 		filters["search"] = search
 	}
 
-	products, err := h.service.ListProducts(filters)
+	products, err := h.service.GetAllProducts()
 	if err != nil {
 		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
@@ -136,7 +136,8 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateProduct(uint(id), &product); err != nil {
+	product.ID = uint(id)
+	if err := h.service.UpdateProduct(&product); err != nil {
 		h.errorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
