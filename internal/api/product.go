@@ -28,8 +28,8 @@ func NewProductHandler(handler *Handler, service *service.ProductService) *Produ
 // @Accept json
 // @Produce json
 // @Param category_id query int false "Filter by category ID"
-// @Param min_price query float false "Minimum price"
-// @Param max_price query float false "Maximum price"
+// @Param min_price query number false "Minimum price"
+// @Param max_price query number false "Maximum price"
 // @Param search query string false "Search term"
 // @Success 200 {object} Response
 // @Router /products [get]
