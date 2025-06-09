@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/sajal/go-ecommerce/internal/api"
 	"github.com/sajal/go-ecommerce/internal/config"
 )
 
@@ -23,13 +24,11 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
-	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "ok",
-			"db":     db != nil,
-		})
-	})
+	// Initialize API handler
+	handler := api.NewHandler(db)
+
+	// Setup routes
+	handler.SetupRoutes(router)
 
 	// Start server
 	serverAddr := ":" + cfg.Port
