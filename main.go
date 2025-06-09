@@ -7,6 +7,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/sajal/go-ecommerce/internal/api"
 	"github.com/sajal/go-ecommerce/internal/config"
+	"github.com/sajal/go-ecommerce/internal/middleware"
 )
 
 func main() {
@@ -23,6 +24,10 @@ func main() {
 
 	// Initialize router
 	router := gin.Default()
+
+	// Apply global middlewares
+	router.Use(middleware.LoggerMiddleware())
+	router.Use(middleware.CORSMiddleware())
 
 	// Initialize API handler
 	handler := api.NewHandler(db)
